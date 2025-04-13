@@ -9,6 +9,16 @@
 # Date : avril 2025
 ##############################################
 
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Le script ne fonctionne pas en tant qu'utilisateur root."
+exit
+fi
+
+command -v curl &> /dev/null || { echo "Installation de curl...";sudo apt install curl -y; }
+command -v ollama &> /dev/null || { echo "Installation d'Ollama...";sudo curl -s https://ollama.com/install.sh | bash; }
+command -v espeak-ng &> /dev/null || { echo "Installation de espeak-ng...";sudo apt install espeak-ng -y; }
+command -v paplay &> /dev/null || { echo "Installation de pulseaudio...";sudo apt install pulseaudio* -y; }
+
 afficher_lentement() {
     local texte="$1"
     local delai="0.06"
