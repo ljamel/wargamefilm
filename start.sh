@@ -76,10 +76,6 @@ do
 
   response=$(ollama run gemma3:1b "$preprompt $response")
 
-  # Ajoute la réponse de Joshua au contexte précédent prompt
-  #context+="\nJoshua : $response"
-
-  # espeak-ng -v fr "$response" --stdout | paplay
   afficher_lentement "Joshua : $response"
 
 done
