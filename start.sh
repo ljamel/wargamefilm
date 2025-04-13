@@ -23,7 +23,7 @@ afficher_lentement() {
     local texte="$1"
     local delai="0.06"
 
-    espeak-ng -v fr "$response" --stdout | paplay &
+    espeak-ng -v fr -s 120 "$response" --stdout | paplay &
 
     for ((i=0; i<${#texte}; i++)); do
         printf "%s" "${texte:$i:1}"
@@ -62,13 +62,84 @@ echo ""
 pulseaudio --start
 espeak-ng -v fr "BONJOUR, PROFESSEUR FALKEN." --stdout | paplay
 
-# Vérifie si Ollama est installé
-command -v ollama &> /dev/null || { echo "Ollama n'est pas installé"; exit 1; }
+morpion() {
+  read -p "Nombre de joueurs (0, 1 ou 2) ? " n
+  b=(1 2 3 4 5 6 7 8 9)
+
+  aff() {
+    echo " ${b[0]} | ${b[1]} | ${b[2]}"
+    echo "---+---+---"
+    echo " ${b[3]} | ${b[4]} | ${b[5]}"
+    echo "---+---+---"
+    echo " ${b[6]} | ${b[7]} | ${b[8]}"
+  }
+
+  gagnant=""
+  win() {
+    for i in 0 3 6; do [[ ${b[i]} == ${b[i+1]} && ${b[i]} == ${b[i+2]} ]] && gagnant=${b[i]} && return 0; done
+    for i in 0 1 2; do [[ ${b[i]} == ${b[i+3]} && ${b[i]} == ${b[i+6]} ]] && gagnant=${b[i]} && return 0; done
+    [[ ${b[0]} == ${b[4]} && ${b[0]} == ${b[8]} ]] && gagnant=${b[0]} && return 0
+    [[ ${b[2]} == ${b[4]} && ${b[2]} == ${b[6]} ]] && gagnant=${b[2]} && return 0
+    return 1
+  }
+
+  if [[ $n == 0 ]]; then
+    echo "Simulation autonome..."
+    sleep 1
+    end=$((SECONDS+30))
+    while (( SECONDS < end )); do
+      b=(1 2 3 4 5 6 7 8 9)
+      for ((t=0;t<9;t++)); do
+        clear
+        aff
+        sleep 0.2
+        while :; do
+          r=$((RANDOM % 9))
+          [[ ${b[r]} != X && ${b[r]} != O ]] && b[r]=$([[ $t%2 == 0 ]] && echo X || echo O); break
+        done
+        win && break
+      done
+    done
+    echo
+    echo "Match nul... Drôle de jeu : pour gagner, il ne faut pas jouer."
+    return
+  fi
+
+  player1="X"
+  player2=$([[ $n -eq 1 ]] && echo "O" || echo "O")
+  for ((t=0; t<9; t++)); do
+    clear
+    aff
+    current=$([[ $((t % 2)) -eq 0 ]] && echo "$player1" || echo "$player2")
+
+    if [[ $current == "X" && $n -ge 1 ]]; then
+      while :; do
+        r=$((RANDOM % 9))
+        [[ ${b[r]} != X && ${b[r]} != O ]] && b[r]="X"; echo "Ordi (X) joue case $((r+1))"; break
+      done
+    elif [[ $current == "O" && $n -eq 1 ]]; then
+      read -p "À toi (O), choisis une case : " c
+      ((c--))
+      [[ ${b[c]} != X && ${b[c]} != O ]] && b[c]="O" || { echo "Invalide"; read; ((t--)); continue; }
+    else
+      read -p "Joueur $current, choisis une case : " c
+      ((c--))
+      [[ ${b[c]} != X && ${b[c]} != O ]] && b[c]=$current || { echo "Invalide"; read; ((t--)); continue; }
+    fi
+
+    win && { clear; aff; echo "Le joueur $gagnant a gagné !"; return; }
+  done
+
+  clear
+  aff
+  echo "Match nul !"
+}
 
 while :
 do
 
   [[ "$user_input" == "exit" ]] && break
+  [[ "$user_input" == "morpion" ]] && morpion
 
   read -p "A quoi voulez-vous jouer : " user_input
 
